@@ -23,11 +23,11 @@
         <!-- 蓝牙广播接收者 -->
         <receiver android:name=".receiver.FoundDeviceBroadcastReceiver">
             <intent-filter>
-
                 <!-- 添加配对请求 -->
                 <action android:name="android.bluetooth.device.action.PAIRING_REQUEST" />
                 <!-- 添加扫描完成 -->
                 <action android:name="android.bluetooth.adapter.action.DISCOVERY_FINISHED" />
+
                 <action android:name="android.bluetooth.device.action.BOND_STATE_CHANGED" />
             </intent-filter>
         </receiver>

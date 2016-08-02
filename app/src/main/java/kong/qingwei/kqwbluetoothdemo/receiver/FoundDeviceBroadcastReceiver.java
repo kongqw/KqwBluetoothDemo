@@ -13,7 +13,7 @@ import kong.qingwei.kqwbluetoothdemo.utils.ConfigUtil;
 
 /**
  * Created by kqw on 2016/8/2.
- * 发现设备的广播接收者
+ * 蓝牙的广播接收者
  */
 public class FoundDeviceBroadcastReceiver extends BroadcastReceiver {
 
