@@ -2,9 +2,7 @@ package kong.qingwei.kqwbluetoothdemo;
 
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -15,8 +13,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
-
-import org.w3c.dom.Text;
 
 import kong.qingwei.kqwbluetoothdemo.adapter.DeviceListAdapter;
 import kong.qingwei.kqwbluetoothdemo.listener.OnFoundDeviceListener;
@@ -141,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements OnFoundDeviceList
     public void onItemClick(RecyclerView.ViewHolder v) {
         String macAddress = mAdapter.getMacAddress(v.getAdapterPosition());
         if (!TextUtils.isEmpty(macAddress)) {
-            Toast.makeText(this, "Address : " + macAddress, Toast.LENGTH_SHORT).show();
+            // Toast.makeText(this, "Address : " + macAddress, Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(this, ChatActivity.class);
             intent.putExtra(ChatActivity.TYPE, ChatActivity.TYPE_CLIENT);
             intent.putExtra(ChatActivity.MAC_ADDRESS, macAddress);
@@ -158,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements OnFoundDeviceList
             progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         }
         progressDialog.setMessage(text);
-//        progressDialog.setCancelable(false);
+        // progressDialog.setCancelable(false);
         progressDialog.setCancelable(true);
         progressDialog.show();
     }

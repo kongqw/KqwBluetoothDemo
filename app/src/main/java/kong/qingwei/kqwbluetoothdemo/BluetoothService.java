@@ -17,10 +17,7 @@ import kong.qingwei.kqwbluetoothdemo.listener.OnConnectStateListener;
 import kong.qingwei.kqwbluetoothdemo.listener.OnMessageListener;
 
 /**
- * This class does all the work for setting up and managing Bluetooth
- * connections with other devices. It has a thread that listens for
- * incoming connections, a thread for connecting with a device, and a
- * thread for performing data transmissions when connected.
+ * 类包含了蓝牙连接，消息的收发
  */
 public class BluetoothService {
     // Debugging
@@ -36,7 +33,6 @@ public class BluetoothService {
 
     // Member fields
     private final BluetoothAdapter mAdapter;
-    //    private final Handler mHandler;
     private AcceptThread mSecureAcceptThread;
     private AcceptThread mInsecureAcceptThread;
     private ConnectThread mConnectThread;
@@ -57,14 +53,12 @@ public class BluetoothService {
     /**
      * 构造方法
      *
-     * @param activity Context
-     *                 // @param handler handler
+     * @param activity activity
      */
-    public BluetoothService(Activity activity/*, Handler handler*/) {
+    public BluetoothService(Activity activity) {
         mActivity = activity;
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = STATE_NONE;
-//        mHandler = handler;
     }
 
     /**
@@ -73,12 +67,9 @@ public class BluetoothService {
      * @param state 状态
      */
     private synchronized void setState(int state) {
-        Log.d(TAG, "setState() " + mState + " -> " + state);
+        Log.i(TAG, "setState: " + mState + " -> " + state);
+        // 设置蓝牙状态
         mState = state;
-
-        // Give the new state to the Handler so the UI Activity can update
-        // mHandler.obtainMessage(Constants.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
-
         // 连接状态变化的回调
         if (null != mOnConnectStateListener) {
             mActivity.runOnUiThread(new Runnable() {
@@ -113,11 +104,10 @@ public class BluetoothService {
     }
 
     /**
-     * Start the chat service. Specifically start AcceptThread to begin a
-     * session in listening (server) mode. Called by the Activity onResume()
+     * 服务端开启监听 等待客户端连接
      */
     public synchronized void start() {
-        Log.d(TAG, "start");
+        Log.i(TAG, "start: ");
 
         // 取消之前的连接线程
         if (mConnectThread != null) {
@@ -211,13 +201,7 @@ public class BluetoothService {
         mConnectedThread = new ConnectedThread(socket, socketType);
         mConnectedThread.start();
 
-        // Send the name of the connected device back to the UI Activity
-//        Message msg = mHandler.obtainMessage(Constants.MESSAGE_DEVICE_NAME);
-//        Bundle bundle = new Bundle();
-//        bundle.putString(Constants.DEVICE_NAME, device.getName());
-//        msg.setData(bundle);
-//        mHandler.sendMessage(msg);
-
+        // 连接成功回调
         if (null != mOnConnectListener) {
             mActivity.runOnUiThread(new Runnable() {
                 @Override
@@ -267,7 +251,7 @@ public class BluetoothService {
     /**
      * 发送消息
      *
-     * @param out The bytes to write
+     * @param out 发送的消息
      * @see ConnectedThread#write(byte[])
      */
     public void write(byte[] out) {
@@ -283,6 +267,7 @@ public class BluetoothService {
      * 连接失败
      */
     private void connectionFailed() {
+        // 连接失败的回调
         if (null != mOnConnectListener) {
             mActivity.runOnUiThread(new Runnable() {
                 @Override
@@ -292,14 +277,7 @@ public class BluetoothService {
             });
         }
 
-//        // Send a failure message back to the Activity
-//        Message msg = mHandler.obtainMessage(Constants.MESSAGE_TOAST);
-//        Bundle bundle = new Bundle();
-//        bundle.putString(Constants.TOAST, "Unable to connect device");
-//        msg.setData(bundle);
-//        mHandler.sendMessage(msg);
-
-        // Start the service over to restart listening mode
+        // 连接失败自动开启，重新等待客户端连接
         // BluetoothService.this.start();
     }
 
@@ -307,6 +285,7 @@ public class BluetoothService {
      * 连接失效
      */
     private void connectionLost() {
+        // 连接丢失的回调
         if (null != mOnConnectListener) {
             mActivity.runOnUiThread(new Runnable() {
                 @Override
@@ -315,14 +294,8 @@ public class BluetoothService {
                 }
             });
         }
-//        // Send a failure message back to the Activity
-//        Message msg = mHandler.obtainMessage(Constants.MESSAGE_TOAST);
-//        Bundle bundle = new Bundle();
-//        bundle.putString(Constants.TOAST, "Device connection was lost");
-//        msg.setData(bundle);
-//        mHandler.sendMessage(msg);
 
-        // Start the service over to restart listening mode
+        // 连接失败自动开启，重新等待客户端连接
         // BluetoothService.this.start();
     }
 
@@ -330,14 +303,14 @@ public class BluetoothService {
      * 服务端等待连接的线程
      */
     private class AcceptThread extends Thread {
-        private final BluetoothServerSocket mmServerSocket;
+        private BluetoothServerSocket mmServerSocket;
         private String mSocketType;
 
         public AcceptThread(boolean secure) {
             BluetoothServerSocket tmp = null;
-            mSocketType = secure ? "Secure" : "Insecure";
-
             try {
+                mSocketType = secure ? "Secure" : "Insecure";
+
                 if (secure) {
                     tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME_SECURE, MY_UUID_SECURE);
                 } else {
@@ -345,28 +318,28 @@ public class BluetoothService {
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Socket Type: " + mSocketType + "listen() failed", e);
+            } finally {
+                mmServerSocket = tmp;
             }
-            mmServerSocket = tmp;
         }
 
         public void run() {
             Log.d(TAG, "Socket Type: " + mSocketType + "BEGIN mAcceptThread" + this);
             setName("AcceptThread" + mSocketType);
 
-            BluetoothSocket socket = null;
+            BluetoothSocket socket;
 
-            // Listen to the server socket if we're not connected
+            // 当前没有连接
             while (mState != STATE_CONNECTED) {
                 try {
-                    // This is a blocking call and will only return on a
-                    // successful connection or an exception
+                    // 等待客户端连接 阻塞线程 连接成功继续向下执行 连接失败抛异常
                     socket = mmServerSocket.accept();
                 } catch (IOException e) {
                     Log.e(TAG, "Socket Type: " + mSocketType + "accept() failed", e);
                     break;
                 }
 
-                // If a connection was accepted
+                // 连接被接受
                 if (socket != null) {
                     synchronized (BluetoothService.this) {
                         switch (mState) {
@@ -406,38 +379,36 @@ public class BluetoothService {
      * 客户端发起连接请求的线程
      */
     private class ConnectThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final BluetoothDevice mmDevice;
+        private BluetoothSocket mmSocket;
+        private BluetoothDevice mmDevice;
         private String mSocketType;
 
         public ConnectThread(BluetoothDevice device, boolean secure) {
-            mmDevice = device;
             BluetoothSocket tmp = null;
-            mSocketType = secure ? "Secure" : "Insecure";
-
-            // Get a BluetoothSocket for a connection with the
-            // given BluetoothDevice
             try {
+                mmDevice = device;
+                mSocketType = secure ? "Secure" : "Insecure";
                 if (secure) {
                     tmp = device.createRfcommSocketToServiceRecord(MY_UUID_SECURE);
                 } else {
                     tmp = device.createInsecureRfcommSocketToServiceRecord(MY_UUID_INSECURE);
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 Log.e(TAG, "Socket Type: " + mSocketType + "create() failed", e);
+            } finally {
+                mmSocket = tmp;
             }
-            mmSocket = tmp;
         }
 
         public void run() {
             Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
             setName("ConnectThread" + mSocketType);
 
-            // Always cancel discovery because it will slow down a connection
+            // 停止设备扫描
             mAdapter.cancelDiscovery();
 
-            // Make a connection to the BluetoothSocket
             try {
+                // 开始连接的回调
                 if (null != mOnConnectListener) {
                     mActivity.runOnUiThread(new Runnable() {
                         @Override
@@ -446,11 +417,10 @@ public class BluetoothService {
                         }
                     });
                 }
-                // This is a blocking call and will only return on a
-                // successful connection or an exception
+                // 开始连接 阻塞线程 连接成功继续执行 连接失败抛异常
                 mmSocket.connect();
             } catch (IOException e) {
-                // Close the socket
+                // 连接失败
                 e.printStackTrace();
                 try {
                     mmSocket.close();
@@ -461,12 +431,12 @@ public class BluetoothService {
                 return;
             }
 
-            // Reset the ConnectThread because we're done
+            // 线程执行完置空重置
             synchronized (BluetoothService.this) {
                 mConnectThread = null;
             }
 
-            // Start the connected thread
+            // 开启消息传递的线程
             connected(mmSocket, mmDevice, mSocketType);
         }
 
@@ -483,26 +453,25 @@ public class BluetoothService {
      * 蓝牙连接成功以后消息传递的线程
      */
     private class ConnectedThread extends Thread {
-        private final BluetoothSocket mmSocket;
+        private BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
 
         public ConnectedThread(BluetoothSocket socket, String socketType) {
             Log.d(TAG, "create ConnectedThread: " + socketType);
-            mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
 
-            // Get the BluetoothSocket input and output streams
             try {
+                mmSocket = socket;
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
             } catch (IOException e) {
                 Log.e(TAG, "temp sockets not created", e);
+            } finally {
+                mmInStream = tmpIn;
+                mmOutStream = tmpOut;
             }
-
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
         }
 
         public void run() {
@@ -510,14 +479,13 @@ public class BluetoothService {
             final byte[] buffer = new byte[1024];
             int bytes;
 
-            // Keep listening to the InputStream while connected
+            // 只有蓝牙处于连接状态就一直循环读取数据
             while (mState == STATE_CONNECTED) {
                 try {
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
 
-                    // Send the obtained bytes to the UI Activity
-                    // mHandler.obtainMessage(Constants.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+                    // 读取到数据的回调
                     if (null != mOnMessageListener) {
                         final int finalBytes = bytes;
                         mActivity.runOnUiThread(new Runnable() {
@@ -529,9 +497,10 @@ public class BluetoothService {
                         });
                     }
                 } catch (IOException e) {
+                    // 读取数据出现异常
                     Log.e(TAG, "disconnected", e);
                     connectionLost();
-                    // Start the service over to restart listening mode
+                    // 数据读取失败自动开启，重新等待客户端连接
                     // BluetoothService.this.start();
                     break;
                 }
@@ -539,15 +508,14 @@ public class BluetoothService {
         }
 
         /**
-         * Write to the connected OutStream.
+         * 发数据
          *
-         * @param buffer The bytes to write
+         * @param buffer 发送内容
          */
         public void write(final byte[] buffer) {
             try {
                 mmOutStream.write(buffer);
-                // Share the sent message back to the UI Activity
-                // mHandler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
+                // 发送数据的回调
                 if (null != mOnMessageListener) {
                     mActivity.runOnUiThread(new Runnable() {
                         @Override
@@ -558,6 +526,7 @@ public class BluetoothService {
                     });
                 }
             } catch (IOException e) {
+                // 发送数据出现失败
                 Log.e(TAG, "Exception during write", e);
             }
         }

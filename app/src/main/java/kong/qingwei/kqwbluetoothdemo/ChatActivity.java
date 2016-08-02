@@ -28,9 +28,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     // 未知
     public static final int TYPE_UNKNOWN = 2;
 
-    private BluetoothManager mBluetoothManager;
     private BluetoothService mBluetoothService;
-    private BluetoothAdapter mBluetoothAdapter;
     private Button mSendButton;
     private EditText mEditText;
 
@@ -40,16 +38,14 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_chat);
         // 发送按钮
         mSendButton = (Button) findViewById(R.id.send);
-        mSendButton.setOnClickListener(this);
+        if (mSendButton != null) {
+            mSendButton.setOnClickListener(this);
+        }
         // 编辑框
         mEditText = (EditText) findViewById(R.id.editText);
 
-        // 蓝牙管理对象
-        mBluetoothManager = new BluetoothManager(this);
         // 蓝牙连接 消息传递的类
         mBluetoothService = new BluetoothService(this);
-
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         // 连接状态变化
         mBluetoothService.setOnConnectStateListener(new OnConnectStateListener() {
@@ -87,7 +83,6 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 // 设置发送按钮可用
                 mSendButton.setEnabled(true);
                 mEditText.setEnabled(true);
-
                 Toast.makeText(ChatActivity.this, "连接成功", Toast.LENGTH_SHORT).show();
             }
 
@@ -120,23 +115,20 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         });
 
         int type = getIntent().getIntExtra(TYPE, TYPE_UNKNOWN);
-        if (TYPE_SERVICE == type) {
-            // 服务端
+        if (TYPE_SERVICE == type) { // 服务端
             // 服务端设置设备可见
-            mBluetoothManager.setDuration();
+            new BluetoothManager(this).setDuration();
             // 等待连接
             mBluetoothService.start();
 
-        } else if (TYPE_CLIENT == type) {
-            // 客户端
-
+        } else if (TYPE_CLIENT == type) { // 客户端
             // 获取MAC地址
             String macAddress = getIntent().getStringExtra(MAC_ADDRESS);
             if (TextUtils.isEmpty(macAddress)) {
                 finish();
             } else {
                 // 连接设备
-                BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(macAddress);
+                BluetoothDevice device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(macAddress);
                 mBluetoothService.connect(device, true);
             }
         } else {
@@ -174,6 +166,11 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    /**
+     * 点击事件
+     *
+     * @param v v
+     */
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
