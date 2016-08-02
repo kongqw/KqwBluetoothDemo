@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_open_bluetooth"
+        android:orderInCategory="100"
+        android:title="打开蓝牙"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_duration"
+        android:orderInCategory="100"
+        android:title="[服务端]设备可见"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_found_device"
+        android:orderInCategory="100"
+        android:title="[客户端]扫描设备"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_close_bluetooth"
+        android:orderInCategory="100"
+        android:title="关闭蓝牙"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_pairing_confirmation"
+        android:orderInCategory="100"
+        android:title="自动配对"
+        app:showAsAction="never" />
+</menu>
