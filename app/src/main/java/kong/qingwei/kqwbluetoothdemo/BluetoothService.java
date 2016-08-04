@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -174,6 +175,18 @@ public class BluetoothService {
      */
     public synchronized void connected(BluetoothSocket socket, final BluetoothDevice device, final String socketType) {
         Log.d(TAG, "connected, Socket Type:" + socketType);
+        // 设置蓝牙状态为已经连接
+        setState(STATE_CONNECTED);
+
+        // 连接成功回调
+        if (null != mOnConnectListener) {
+            mActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mOnConnectListener.connectionSuccess(device);
+                }
+            });
+        }
 
         // 关闭客户端的连接线程
         if (mConnectThread != null) {
@@ -200,19 +213,6 @@ public class BluetoothService {
         // 开启新的消息收发线程
         mConnectedThread = new ConnectedThread(socket, socketType);
         mConnectedThread.start();
-
-        // 连接成功回调
-        if (null != mOnConnectListener) {
-            mActivity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mOnConnectListener.connectionSuccess(device);
-                }
-            });
-        }
-
-        // 设置蓝牙状态为已经连接
-        setState(STATE_CONNECTED);
     }
 
     /**
@@ -346,6 +346,7 @@ public class BluetoothService {
                             case STATE_LISTEN:
                             case STATE_CONNECTING:
                                 // Situation normal. Start the connected thread.
+                                Log.i(TAG, "run: 马上开启消息收发线程222");
                                 connected(socket, socket.getRemoteDevice(), mSocketType);
                                 break;
                             case STATE_NONE:
@@ -437,6 +438,7 @@ public class BluetoothService {
             }
 
             // 开启消息传递的线程
+            Log.i(TAG, "run: 开启消息收发线程111");
             connected(mmSocket, mmDevice, mSocketType);
         }
 
@@ -482,9 +484,14 @@ public class BluetoothService {
             // 只有蓝牙处于连接状态就一直循环读取数据
             while (mState == STATE_CONNECTED) {
                 try {
+                    mActivity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(mActivity, "正在监听收到的消息...", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
-
                     // 读取到数据的回调
                     if (null != mOnMessageListener) {
                         final int finalBytes = bytes;

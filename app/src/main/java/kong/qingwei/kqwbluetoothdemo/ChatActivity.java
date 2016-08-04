@@ -83,7 +83,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 // 设置发送按钮可用
                 mSendButton.setEnabled(true);
                 mEditText.setEnabled(true);
-                Toast.makeText(ChatActivity.this, "连接成功", Toast.LENGTH_SHORT).show();
+                // Toast.makeText(ChatActivity.this, "连接成功", Toast.LENGTH_SHORT).show();
             }
 
             @Override
