@@ -151,8 +151,8 @@ public class MainActivity extends AppCompatActivity implements OnFoundDeviceList
     public void buildProgressDialog(String text) {
         if (progressDialog == null) {
             progressDialog = new ProgressDialog(this);
-//            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            // progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         }
         progressDialog.setMessage(text);
         // progressDialog.setCancelable(false);
